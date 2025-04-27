@@ -1,0 +1,253 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: SAM App with Shared Layer and Separate Lambdas
+
+Globals:
+  Function:
+    Timeout: 10
+    Runtime: nodejs18.x
+  Api:
+    Cors:
+      AllowOrigin: "'*'"
+      AllowMethods: "'GET,POST,OPTIONS,DELETE'"
+      AllowHeaders: "'Content-Type,Authorization'"
+Resources:
+  CommonUtilsLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: common_utils
+      Description: Shared DB and utility functions
+      ContentUri: common-layer/
+      CompatibleRuntimes:
+        - nodejs18.x
+
+  RegisterUserFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: registerUser
+      Timeout: 30
+      Handler: index.handler
+      Policies:
+        - S3WritePolicy:
+            BucketName: uemxosbn.imperial
+      CodeUri: registerUser/
+      Layers:
+        - !Ref CommonUtilsLayer
+      Events:
+        ApiPOST:
+          Type: Api
+          Properties:
+            Path: /registerUser
+            Method: post
+      Environment:
+        Variables:
+          DB_HOST: host.docker.internal
+          DB_USER: doaamohsen
+          DB_PASSWORD: 1234
+          DB_NAME: task_db
+          S3_BUCKET: uemxosbn.imperial
+          NODE_OPTIONS: --inspect-brk=0.0.0.0:9229
+  LoginUserFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: loginUser
+      Handler: index.handler
+      CodeUri: loginUser/
+      Layers:
+        - !Ref CommonUtilsLayer
+      Events:
+        ApiPOST:
+          Type: Api
+          Properties:
+            Path: /loginUser
+            Method: post
+      Environment:
+        Variables:
+          DB_HOST: host.docker.internal
+          DB_USER: doaamohsen
+          DB_PASSWORD: 1234
+          DB_NAME: task_db
+          JWT_SECRET: e95bf068a951666f6b53adbb8fb73d555154e1f9c7e3fc76e93f91f000abbd7ad5a549d0f07962631d2eb83804d8caff708e85051b09992cc1347774
+          S3_BUCKET: your-s3-bucket
+  GetProductsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: getProducts
+      Handler: index.handler
+      CodeUri: getProducts/
+      Runtime: nodejs18.x
+      Layers:
+        - !Ref CommonUtilsLayer
+      Events:
+        ApiGET:
+          Type: Api
+          Properties:
+            Path: /products
+            Method: Get
+      Environment:
+        Variables:
+          DB_HOST: host.docker.internal
+          DB_USER: doaamohsen
+          DB_PASSWORD: 1234
+          DB_NAME: task_db
+          JWT_SECRET: e95bf068a951666f6b53adbb8fb73d555154e1f9c7e3fc76e93f91f000abbd7ad5a549d0f07962631d2eb83804d8caff708e85051b09992cc1347774
+  GetCartFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: getCart
+      Handler: index.handler
+      Runtime: nodejs18.x
+      CodeUri: getCart/
+      Layers:
+        - !Ref CommonUtilsLayer
+      Policies:
+        - AWSLambdaBasicExecutionRole
+      Environment:
+        Variables:
+          DB_HOST: host.docker.internal
+          DB_USER: doaamohsen
+          DB_PASSWORD: 1234
+          DB_NAME: task_db
+          JWT_SECRET: e95bf068a951666f6b53adbb8fb73d555154e1f9c7e3fc76e93f91f000abbd7ad5a549d0f07962631d2eb83804d8caff708e85051b09992cc1347774
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /cart
+            Method: GET
+
+  AddToCartFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: addToCart
+      CodeUri: addToCart/
+      Handler: index.handler
+      Runtime: nodejs18.x
+      Layers:
+        - !Ref CommonUtilsLayer
+      Events:
+        ApiPOST:
+          Type: Api
+          Properties:
+            Path: /cart/add
+            Method: post
+      Environment:
+        Variables:
+          DB_HOST: host.docker.internal
+          DB_USER: doaamohsen
+          DB_PASSWORD: 1234
+          DB_NAME: task_db
+          JWT_SECRET: e95bf068a951666f6b53adbb8fb73d555154e1f9c7e3fc76e93f91f000abbd7ad5a549d0f07962631d2eb83804d8caff708e85051b09992cc1347774
+  RemoveFromCartFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: removeFromCart
+      CodeUri: removeFromCart/
+      Handler: index.handler
+      Runtime: nodejs18.x
+      Layers:
+        - !Ref CommonUtilsLayer
+      Events:
+        ApiDELETE:
+          Type: Api
+          Properties:
+            Path: /cart/remove
+            Method: delete
+      Environment:
+        Variables:
+          DB_HOST: host.docker.internal
+          DB_USER: doaamohsen
+          DB_PASSWORD: 1234
+          DB_NAME: task_db
+          JWT_SECRET: e95bf068a951666f6b53adbb8fb73d555154e1f9c7e3fc76e93f91f000abbd7ad5a549d0f07962631d2eb83804d8caff708e85051b09992cc1347774
+  AddAddressFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: addAddress
+      CodeUri: addAddress/
+      Handler: index.handler
+      Runtime: nodejs18.x
+      Layers:
+        - !Ref CommonUtilsLayer
+      Events:
+        ApiPOST:
+          Type: Api
+          Properties:
+            Path: /address/add
+            Method: post
+      Environment:
+        Variables:
+          DB_HOST: host.docker.internal
+          DB_USER: doaamohsen
+          DB_PASSWORD: 1234
+          DB_NAME: task_db
+          JWT_SECRET: e95bf068a951666f6b53adbb8fb73d555154e1f9c7e3fc76e93f91f000abbd7ad5a549d0f07962631d2eb83804d8caff708e85051b09992cc1347774
+
+  GetAddressesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: getAddresses
+      CodeUri: getAddresses/
+      Handler: index.handler
+      Runtime: nodejs18.x
+      Layers:
+        - !Ref CommonUtilsLayer
+      Events:
+        ApiGET:
+          Type: Api
+          Properties:
+            Path: /address
+            Method: get
+      Environment:
+        Variables:
+          DB_HOST: host.docker.internal
+          DB_USER: doaamohsen
+          DB_PASSWORD: 1234
+          DB_NAME: task_db
+          JWT_SECRET: e95bf068a951666f6b53adbb8fb73d555154e1f9c7e3fc76e93f91f000abbd7ad5a549d0f07962631d2eb83804d8caff708e85051b09992cc1347774
+
+  UpdateAddressFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: updateAddress
+      CodeUri: updateAddress/
+      Handler: index.handler
+      Runtime: nodejs18.x
+      Layers:
+        - !Ref CommonUtilsLayer
+      Events:
+        ApiPUT:
+          Type: Api
+          Properties:
+            Path: /address/{id}
+            Method: put
+      Environment:
+        Variables:
+          DB_HOST: host.docker.internal
+          DB_USER: doaamohsen
+          DB_PASSWORD: 1234
+          DB_NAME: task_db
+          JWT_SECRET: e95bf068a951666f6b53adbb8fb73d555154e1f9c7e3fc76e93f91f000abbd7ad5a549d0f07962631d2eb83804d8caff708e85051b09992cc1347774
+
+  DeleteAddressFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: deleteAddress
+      CodeUri: deleteAddress/
+      Handler: index.handler
+      Runtime: nodejs18.x
+      Layers:
+        - !Ref CommonUtilsLayer
+      Events:
+        ApiDELETE:
+          Type: Api
+          Properties:
+            Path: /address/{id}
+            Method: delete
+      Environment:
+        Variables:
+          DB_HOST: host.docker.internal
+          DB_USER: doaamohsen
+          DB_PASSWORD: 1234
+          DB_NAME: task_db
+          JWT_SECRET: e95bf068a951666f6b53adbb8fb73d555154e1f9c7e3fc76e93f91f000abbd7ad5a549d0f07962631d2eb83804d8caff708e85051b09992cc1347774
