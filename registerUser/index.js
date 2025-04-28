@@ -34,10 +34,7 @@ exports.handler = async (event) => {
             };
         }
 
-        // Hash password
         const hashedPassword = await bcrypt.hash(password, 10);
-
-        // Upload profile picture to S3
         const key = `profile-pics/${Date.now()}-${email}.jpg`;
         const buffer = Buffer.from(profilePicBase64, 'base64');
 
@@ -49,9 +46,8 @@ exports.handler = async (event) => {
             ContentType: 'image/jpeg'
         }).promise();
 
-        const profilePicUrl = `https://${BUCKET}.s3.amazonaws.com/${key}`;
+        const profilePicUrl = `http://${BUCKET}.s3.amazonaws.com/${key}`;
 
-        // Insert user into DB
         await createUser(connection, {
             name,
             email,

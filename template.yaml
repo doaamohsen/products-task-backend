@@ -25,7 +25,6 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: registerUser
-      Timeout: 30
       Handler: index.handler
       Policies:
         - S3WritePolicy:
@@ -46,7 +45,7 @@ Resources:
           DB_PASSWORD: 1234
           DB_NAME: task_db
           S3_BUCKET: uemxosbn.imperial
-          NODE_OPTIONS: --inspect-brk=0.0.0.0:9229
+
   LoginUserFunction:
     Type: AWS::Serverless::Function
     Properties:
